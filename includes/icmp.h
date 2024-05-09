@@ -1,0 +1,49 @@
+#ifndef FT_PING_H
+#define FT_PING_H
+
+#include <stdint.h>
+
+enum e_type {
+	ICMP_ECHO_REPLY = 0,
+	ICMP_DEST_UNREACH = 3,
+	ICMP_SOURCE_QUENCH = 4,
+	ICMP_REDIRECT = 5,
+	ICMP_ECHO = 8,
+	ICMP_TIME_EXCEEDED = 11,
+	ICMP_PARAMETERPROB = 12,
+	ICMP_TIMESTAMP = 13,
+	ICMP_TIMESTAMPREPLY = 14,
+	ICMP_INFO_REQUEST = 15,
+	ICMP_INFO_REPLY = 16,
+	ICMP_ADDRESS = 17,
+	ICMP_ADDRESSREPLY = 18
+};
+
+enum e_code {
+	ICMP_NET_UNREACH = 0,
+	ICMP_HOST_UNREACH = 1,
+	ICMP_PROT_UNREACH = 2,
+	ICMP_PORT_UNREACH = 3,
+	ICMP_FRAG_NEEDED = 4,
+	ICMP_SR_FAILED = 5,
+	ICMP_NET_UNKNOWN = 6,
+	ICMP_HOST_UNKNOWN = 7,
+	ICMP_HOST_ISOLATED = 8,
+	ICMP_NET_ANO = 9,
+	ICMP_HOST_ANO = 10,
+	ICMP_NET_UNR_TOS = 11,
+	ICMP_HOST_UNR_TOS = 12,
+	ICMP_PKT_FILTERED = 13,
+	ICMP_PREC_VIOLATION = 14,
+	ICMP_PREC_CUTOFF = 15
+};
+
+typedef struct s_icmp {
+	uint8_t		type;
+	uint8_t		code;
+	uint16_t	checksum;
+	uint16_t	id;
+	uint16_t	seq;
+}	t_icmp;
+
+#endif
