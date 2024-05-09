@@ -6,7 +6,7 @@ SRCS_DIR := ./srcs
 
 OBJS_DIR := ./objs
 
-SRCS := main.c map.c
+SRCS := main.c map.c opt.c error.c
 
 SRCS := $(addprefix $(SRCS_DIR)/, $(SRCS))
 
