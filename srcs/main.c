@@ -2,6 +2,7 @@
 #include "map.h"
 #include "opt.h"
 #include <stdio.h>
+#include <string.h>
 
 int main(int ac, char **av)
 {
@@ -14,6 +15,7 @@ int main(int ac, char **av)
 	// map_code_init(map_code, SIZE_CODE_ICMP);
 	if (check_args(ac, av) == EXIT_FAILURE)
 		return (EXIT_FAILURE);
-	host = (av[1][0] == '-') ? av[2] : av[1];
+	host = (av[1][0] == '-' && strlen(av[1]) > 1) ? av[2] : av[1];
+	printf("host = %s\n", host);
 	return (EXIT_SUCCESS);
 }

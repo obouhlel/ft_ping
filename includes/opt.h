@@ -7,9 +7,9 @@
 
 #define OPT_SIZE 5
 
-#define HELP_USAGE "Usage: ping [-v] HOST...\n"
+#define HELP_USAGE "Usage: ft_ping [-v] HOST...\n"
 
-#define HELP "Usage: ping [OPTION...] HOST ...\nSend ICMP ECHO_REQUEST packets to network hosts.\n\n" \
+#define HELP "Usage: ft_ping [OPTION...] HOST ...\nSend ICMP ECHO_REQUEST packets to network hosts.\n\n" \
 "Options valid for all request types:\n\n" \
 " -v, --verbose\t\t\t\tverbose output\n\n" \
 "Options valid for --echo requests:\n\n" \
