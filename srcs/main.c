@@ -1,21 +1,24 @@
-#include "icmp.h"
 #include "map.h"
 #include "opt.h"
-#include <stdio.h>
-#include <string.h>
+#include "parsing.h"
+#include "socket.h"
 
 int main(int ac, char **av)
 {
-	const char	*host;
-	t_map_int map_type[SIZE_TYPE_ICMP] = {0};
-	// t_map_int map_code[SIZE_CODE_ICMP] = {0};
-	// t_icmp icmp = {0};
+	t_host	host = {0};
 
-	map_type_init(map_type, SIZE_TYPE_ICMP);
-	// map_code_init(map_code, SIZE_CODE_ICMP);
 	if (check_args(ac, av) == EXIT_FAILURE)
 		return (EXIT_FAILURE);
-	host = (av[1][0] == '-' && strlen(av[1]) > 1) ? av[2] : av[1];
-	printf("host = %s\n", host);
+	host.hostname = (av[1][0] == '-' && strlen(av[1]) > 1) ? av[2] : av[1];
+	if (!is_ip(host.hostname))
+		host.ip = get_ip(host.hostname);
+	else
+		host.ip = host.hostname;
+	if (host.ip == NULL)
+		return (ft_error(ERR_HOST_UNKNOWN, NULL));
+	if (setup_socket(&host) == EXIT_FAILURE)
+		return (EXIT_FAILURE);
+	ping_loop(&host);
+	close(host.socket_fd);
 	return (EXIT_SUCCESS);
 }

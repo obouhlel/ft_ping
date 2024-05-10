@@ -6,7 +6,7 @@ SRCS_DIR := ./srcs
 
 OBJS_DIR := ./objs
 
-SRCS := main.c map.c opt.c error.c
+SRCS := main.c map.c opt.c parsing.c socket.c
 
 SRCS := $(addprefix $(SRCS_DIR)/, $(SRCS))
 
@@ -16,7 +16,7 @@ DEPS := $(OBJS:.o=.d)
 
 CC := cc
 
-CFLAGS := -Wall -Wextra -Werror -MMD -I$(INCS_DIR)
+CFLAGS := -Wall -Wextra -Werror -MMD -I$(INCS_DIR) -lm
 
 CFLAGS += -fsanitize=address -g
 

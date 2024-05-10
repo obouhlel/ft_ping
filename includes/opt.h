@@ -17,6 +17,5 @@
 
 bool	is_option(const char *str);
 void	map_opt_init(t_map_str *map, int size);
-int		check_args(int ac, char **av);
 
 #endif
