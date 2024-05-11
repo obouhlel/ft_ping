@@ -1,13 +1,15 @@
 #include "map.h"
 #include "opt.h"
+#include "ping.h"
 #include "parsing.h"
 #include "socket.h"
+#include <unistd.h>
 
 int main(int ac, char **av)
 {
 	t_host	host = {0};
 
-	if (check_args(ac, av) == EXIT_FAILURE)
+	if (check_args(ac, av, &host) == EXIT_FAILURE)
 		return (EXIT_FAILURE);
 	host.hostname = (av[1][0] == '-' && strlen(av[1]) > 1) ? av[2] : av[1];
 	if (!is_ip(host.hostname))

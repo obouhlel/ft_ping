@@ -1,7 +1,7 @@
 #include "map.h"
 #include <stdlib.h>
 
-void	map_str_insert(t_map_str *map, char *key, t_function_opt f, int size)
+void	map_str_insert(t_map *map, char *key, t_function_opt f, int size)
 {
 	for (int i = 0; i < size; i++)
 	{

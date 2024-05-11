@@ -16,6 +16,6 @@
 " -?, --help\t\t\t\tgive this help list\n --usage\t\t\t\tgive a short usage message\n\n"
 
 bool	is_option(const char *str);
-void	map_opt_init(t_map_str *map, int size);
+void	map_opt_init(t_map *map, int size);
 
 #endif

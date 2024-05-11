@@ -11,8 +11,10 @@
 #define ERR_UNRECOGNIZED_OPTION "ft_ping: unrecognized option '%s'\nTry 'ping --help' or 'ping --usage' for more information.\n"
 #define ERR_HOST_UNKNOWN "ft_ping: unkwon host\n"
 
+typedef struct s_host t_host;
+
 int		ft_error(const char *msg, char *arg);
-int		check_args(int ac, char **av);
+int		check_args(int ac, char **av, t_host *host);
 bool	is_ip(char *host);
 
 #endif

@@ -6,7 +6,7 @@ SRCS_DIR := ./srcs
 
 OBJS_DIR := ./objs
 
-SRCS := main.c map.c opt.c parsing.c socket.c
+SRCS := main.c map.c opt.c parsing.c socket.c ping.c timer.c
 
 SRCS := $(addprefix $(SRCS_DIR)/, $(SRCS))
 

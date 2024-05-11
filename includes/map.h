@@ -3,14 +3,16 @@
 
 #include <stdint.h>
 
-typedef void (*t_function_opt)(void);
+typedef struct s_host t_host;
 
-typedef struct s_map_str
+typedef void (*t_function_opt)(t_host *host);
+
+typedef struct s_map
 {
 	char			*key;
 	t_function_opt	f;
-}	t_map_str;
+}	t_map;
 
-void	map_str_insert(t_map_str *map, char *key, t_function_opt f, int size);
+void	map_str_insert(t_map *map, char *key, t_function_opt f, int size);
 
 #endif

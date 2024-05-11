@@ -1,6 +1,7 @@
 #include "parsing.h"
 #include "opt.h"
 #include "error.h"
+#include "socket.h"
 
 int ft_error(const char *msg, char *arg)
 {
@@ -15,9 +16,9 @@ int ft_error(const char *msg, char *arg)
 	return (EXIT_FAILURE);
 }
 
-int	check_args(int ac, char **av)
+int	check_args(int ac, char **av, t_host *host)
 {
-	t_map_str	opt[OPT_SIZE] = {0};
+	t_map	opt[OPT_SIZE] = {0};
 	bool		have_option = false;
 	int			i = 0;
 
@@ -31,7 +32,7 @@ int	check_args(int ac, char **av)
 		{
 			if (strcmp(av[1], opt[i].key) == 0)
 			{
-				opt[i].f();
+				opt[i].f(host);
 				break ;
 			}
 		}
@@ -40,7 +41,6 @@ int	check_args(int ac, char **av)
 	}
 	if (have_option && av[2] == NULL)
 		return (ft_error(ERR_MISSING_HOST, NULL));
-	// printf("\nDEBUG: g_verbose = %s\n", g_verbose ? "true" : "false");
 	return (EXIT_SUCCESS);
 }
 
