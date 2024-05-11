@@ -21,34 +21,13 @@ unsigned short calculate_checksum(void *b, int len)
 bool	checksum_icmp(t_icmp *icmp_packet)
 {
 	t_icmp *packet = icmp_packet;
-	int len = sizeof(icmp_packet);
+	int len = sizeof(t_icmp);
 	unsigned short checksum = packet->checksum;
 
 	packet->checksum = 0;
 	if (checksum != calculate_checksum(packet, len))
 		return (false);
 	return (true);
-}
-
-t_icmp *create_icmp_packet_send(char buffer[BUFFER_SIZE])
-{
-	t_icmp *icmp = (t_icmp *)buffer;
-
-	icmp->type = ICMP_ECHO;
-	icmp->code = 0;
-	icmp->checksum = 0; 
-	icmp->un.echo.id = getpid();
-	icmp->un.echo.sequence = 0;
-
-	icmp->checksum = calculate_checksum(icmp, sizeof(t_icmp));
-	return (icmp);
-}
-
-t_icmp *create_icmp_packet_recv(char *buffer)
-{
-	t_icmp *icmp = (t_icmp *)buffer;
-
-	return (icmp);
 }
 
 char	*get_ip(char *hostname)
@@ -69,8 +48,8 @@ char	*get_ip(char *hostname)
 
 int setup_socket(t_host *host)
 {
-	int sock_fd;
-	t_timeval timeout = {.tv_sec = 1, .tv_usec = 0};
+	int			sock_fd;
+	t_timeval	timeout = {.tv_sec = 1, .tv_usec = 0};
 
 	sock_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP);
 	if (sock_fd < 0)
@@ -85,78 +64,111 @@ int setup_socket(t_host *host)
 		return (EXIT_FAILURE);
 	}
 	host->socket_fd = sock_fd;
+
+	memset(&host->dest_addr, 0, sizeof(host->dest_addr));
+	host->dest_addr.sin_family = AF_INET;
+	host->dest_addr.sin_port = htons(80);
+	host->dest_addr.sin_addr.s_addr = inet_addr(host->ip);
+
 	return (EXIT_SUCCESS);
 }
 
-void	print_icmp(t_icmp *icmp)
+void start_timer(t_timer *timer)
 {
-	printf("ICMP packet:\n");
-	printf("type: %d\n", icmp->type);
-	printf("code: %d\n", icmp->code);
-	printf("checksum: %d\n", icmp->checksum);
-	printf("id: %d\n", icmp->un.echo.id);
-	printf("sequence: %d\n", icmp->un.echo.sequence);
+	clock_gettime(CLOCK_MONOTONIC, &timer->start);
 }
 
-int send_ping(t_host *host)
+void stop_timer(t_timer *timer)
+{
+	clock_gettime(CLOCK_MONOTONIC, &timer->end);
+	timer->time = (timer->end.tv_sec - timer->start.tv_sec) * 1000.0;
+	timer->time += (timer->end.tv_nsec - timer->start.tv_nsec) / 1000000.0;
+}
+
+void update_stats(t_ping_stats *stats, t_timer *timer)
+{
+	stats->sum_time += timer->time;
+	stats->sum_time_squared += timer->time * timer->time;
+	if (timer->time < stats->min_time || stats->min_time == 0)
+		stats->min_time = timer->time;
+	if (timer->time > stats->max_time)
+		stats->max_time = timer->time;
+}
+
+void print_stats(t_host *host, t_ping_stats *stats)
+{
+    double	avg = stats->sum_time / stats->received;
+    double	variance = (stats->sum_time_squared / stats->received) - (avg * avg);
+    double	stddev = sqrt(variance);
+
+    printf("--- %s ping statistics ---\n", host->hostname);
+    printf("%d packets transmitted, %d received, %d%% packet loss\n", stats->transmitted, stats->received, ((stats->transmitted - stats->received) * 100) / stats->transmitted);
+    printf("round-trip min/avg/max/stddev = %.3f/%.3f/%.3f/%.3f ms\n", stats->min_time, avg, stats->max_time, stddev);
+}
+
+int send_ping(t_host *host, t_ping_stats *stats, t_timer *timer)
 {
 	ssize_t			ret = 0;
 	char			buffer[BUFFER_SIZE] = {0};
-	t_icmp			*icmp = create_icmp_packet_send(buffer);
-	t_sockaddr_in	addr = {0};
-	int				addr_len = sizeof(addr);
+	t_icmp			*icmp = (t_icmp *)buffer;
+	static int		seq = 0;
 
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(80);
-	addr.sin_addr.s_addr = inet_addr(host->ip);
+	icmp->type = ICMP_ECHO;
+	icmp->code = 0;
+	icmp->checksum = 0; 
+	icmp->un.echo.id = getpid();
+	icmp->un.echo.sequence = seq++;
 
-	ret = sendto(host->socket_fd, buffer, BUFFER_SIZE, 0, (t_sockaddr *)&addr, addr_len);
+	icmp->checksum = calculate_checksum(icmp, sizeof(t_icmp));
+
+	start_timer(timer);
+	ret = sendto(host->socket_fd, buffer, BUFFER_SIZE, 0, (t_sockaddr *)&(host->dest_addr), sizeof(host->dest_addr));
 	if (ret < 0)
 	{
 		perror("ping: sendto failed");
 		return (EXIT_FAILURE);
 	}
-	printf("------ Sent ICMP packet ------\n");
-	print_icmp(icmp);
-	printf("-------------------------------\n");
+	stats->transmitted++;
 	return (EXIT_SUCCESS);
 }
 
-int recv_ping(t_host *host)
+int recv_ping(t_host *host, t_ping_stats *stats, t_timer *timer)
 {
-	ssize_t ret = 0;
-	char buffer[BUFFER_SIZE + sizeof(t_ip)] = {0};
-	t_sockaddr_in addr = {0};
-	socklen_t len = sizeof(addr);
-	t_icmp *icmp = NULL;
+	ssize_t		ret = 0;
+	char		buffer[BUFFER_SIZE] = {0};
+	socklen_t	len = sizeof(host->dest_addr);
+	t_icmp		*icmp = NULL;
+	t_ip		*ip = NULL;
 
-	t_ip *ip = (t_ip *)buffer;
-
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(80);
-	addr.sin_addr.s_addr = inet_addr(host->ip);
-
-	ret = recvfrom(host->socket_fd, buffer, BUFFER_SIZE, 0, (t_sockaddr *)&addr, &len);
+	ret = recvfrom(host->socket_fd, buffer, BUFFER_SIZE, 0, (t_sockaddr *)&(host->dest_addr), &len);
 	if (ret < 0)
 	{
 		perror("ping: recvfrom failed");
 		return (EXIT_FAILURE);
 	}
-
-	printf("------ Received ICMP packet ------\n");
-	icmp = create_icmp_packet_recv(buffer + sizeof(t_ip));
-	printf("Checksum: %s\n", checksum_icmp(icmp) ? "OK" : "KO");
-	printf("TTL: %d\n", ip->ttl);
-	print_icmp(icmp);
-	printf("----------------------------------\n");
+	ip = (t_ip *)buffer;
+	icmp = (t_icmp *)(buffer + sizeof(t_ip));
+	if (!checksum_icmp(icmp))
+		return (EXIT_SUCCESS);
+	stop_timer(timer);
+	printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n", ret, host->ip, icmp->un.echo.sequence, ip->ttl, timer->time);
+	stats->received++;
 	return (EXIT_SUCCESS);
 }
 
 void	ping_loop(t_host *host)
 {
-	printf("PING %s (%s)\n", host->hostname, host->ip);
-	if (send_ping(host) == EXIT_FAILURE)
-		return ;
-	if (recv_ping(host) == EXIT_FAILURE)
-		return ;
+	t_ping_stats	stats = {0};
+	t_timer			timer;
+
+	printf("PING %s (%s): %ld data bytes\n", host->hostname, host->ip, BUFFER_SIZE - sizeof(t_icmp));
+	for (int i = 0; i < 4; i++)
+	{
+		bzero(&timer, sizeof(t_timer));
+		send_ping(host, &stats, &timer);
+		recv_ping(host, &stats, &timer);
+		update_stats(&stats, &timer);
+		sleep(1);
+	}
+	print_stats(host, &stats);
 }
