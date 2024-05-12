@@ -99,6 +99,7 @@ int recv_ping(t_host *host, t_ping_stats *stats, t_timer *timer)
 	socklen_t	len = sizeof(host->dest_addr);
 	t_icmp		*icmp = NULL;
 	t_ip		*ip = NULL;
+	static int	old_seq = -1;
 
 	ret = recvfrom(host->socket_fd, buffer, BUFFER_SIZE, 0, (t_sockaddr *)&(host->dest_addr), &len);
 	if (ret < 0)
@@ -110,9 +111,18 @@ int recv_ping(t_host *host, t_ping_stats *stats, t_timer *timer)
 	icmp = (t_icmp *)(buffer + sizeof(t_ip));
 	if (!checksum_icmp(icmp))
 		return (EXIT_SUCCESS);
+	if (icmp->type != ICMP_ECHOREPLY && !host->verbose)
+		return (EXIT_SUCCESS);
+	if (icmp->un.echo.sequence == old_seq)
+	{
+		stats->transmitted--;
+		stats->to_update = false;
+		return (EXIT_SUCCESS);
+	}
 	stop_timer(timer);
 	printf("%ld bytes from %s: icmp_seq=%d ttl=%d time=%.3f ms\n", ret, host->ip, icmp->un.echo.sequence, ip->ttl, timer->time);
 	stats->received++;
+	old_seq = icmp->un.echo.sequence;
 	return (EXIT_SUCCESS);
 }
 
@@ -131,10 +141,15 @@ void	ping_loop(t_host *host)
 	while (g_running)
 	{
 		bzero(&timer, sizeof(t_timer));
+		stats.to_update = true;
 		send_ping(host, &stats, &timer);
 		recv_ping(host, &stats, &timer);
-		update_stats(&stats, &timer);
-		sleep(1);
+		if (stats.to_update)
+			update_stats(&stats, &timer);
+		if (strcmp(host->ip, "127.0.0.1") == 0)
+			usleep(500000);
+		else
+			sleep(1);
 	}
 	print_stats(host, &stats);
 }

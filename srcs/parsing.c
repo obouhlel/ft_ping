@@ -18,28 +18,31 @@ int ft_error(const char *msg, char *arg)
 
 int	check_args(int ac, char **av, t_host *host)
 {
-	t_map	opt[OPT_SIZE] = {0};
+	t_map		opt[OPT_SIZE] = {0};
 	bool		have_option = false;
 	int			i = 0;
+	int			j = 0;
 
 	map_opt_init(opt, OPT_SIZE);
 	if (ac < 2)
 		return (ft_error(ERR_MISSING_HOST, NULL));
-	if (is_option(av[1]))
+	for (j = 1; j < ac; j++)
 	{
+		if (!is_option(av[j]))
+			continue ;
 		have_option = true;
 		for (i = 0; i < OPT_SIZE; i++)
 		{
-			if (strcmp(av[1], opt[i].key) == 0)
+			if (strcmp(av[j], opt[i].key) == 0)
 			{
 				opt[i].f(host);
 				break ;
 			}
 		}
 		if (i == OPT_SIZE)
-			return (ft_error(ERR_UNRECOGNIZED_OPTION, av[1]));
+			return (ft_error(ERR_UNRECOGNIZED_OPTION, av[j]));
 	}
-	if (have_option && av[2] == NULL)
+	if (have_option && ac == 2)
 		return (ft_error(ERR_MISSING_HOST, NULL));
 	return (EXIT_SUCCESS);
 }

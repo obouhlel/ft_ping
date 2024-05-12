@@ -15,6 +15,7 @@ typedef struct iphdr t_ip;
 typedef struct icmphdr t_icmp;
 
 typedef struct s_ping_stats {
+	bool	to_update;
 	int		transmitted;
 	int		received;
 	double	min_time;
